@@ -26,6 +26,7 @@ dnl Checks for programs.
 AC_PROG_CXX
 AM_PROG_AS
 AC_PROG_INSTALL
+AC_PROG_RANLIB
 
 m4_pattern_forbid([^PKG_PROG_])
 if test "$cross_compiling" = "no"; then
