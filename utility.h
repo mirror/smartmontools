@@ -27,51 +27,55 @@
 
 #define UTILITY_H_CVSID "$Id$"
 
-#include <time.h>
-#include <sys/types.h> // for regex.h (according to POSIX)
 #include <regex.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 #include <string>
+#include <sys/types.h> // for regex.h (according to POSIX)
+#include <time.h>
+
+#include "config.h"
 
 #ifndef __GNUC__
-#define __attribute_format_printf(x, y)  /**/
+#define __attribute_format_printf(x, y) /**/
 #elif defined(__MINGW32__) && __USE_MINGW_ANSI_STDIO
 // Check format of __mingw_*printf() instead of MSVCRT.DLL:*printf()
-#define __attribute_format_printf(x, y)  __attribute__((format (gnu_printf, x, y)))
+#define __attribute_format_printf(x, y)                                        \
+  __attribute__((format(gnu_printf, x, y)))
 #define HAVE_WORKING_SNPRINTF 1
 #else
-#define __attribute_format_printf(x, y)  __attribute__((format (printf, x, y)))
+#define __attribute_format_printf(x, y) __attribute__((format(printf, x, y)))
 #endif
 
 // Make version information string
-std::string format_version_info(const char * prog_name, bool full = false);
+std::string format_version_info(const char *prog_name, bool full = false);
 
 // return (v)sprintf() formated std::string
-std::string strprintf(const char * fmt, ...)
-    __attribute_format_printf(1, 2);
-std::string vstrprintf(const char * fmt, va_list ap);
+std::string strprintf(const char *fmt, ...) __attribute_format_printf(1, 2);
+std::string vstrprintf(const char *fmt, va_list ap);
 
 // Return true if STR starts with PREFIX
-inline bool str_starts_with(const char * str, const char * prefix)
-  { return !strncmp(str, prefix, strlen(prefix)); }
+inline bool str_starts_with(const char *str, const char *prefix) {
+  return !strncmp(str, prefix, strlen(prefix));
+}
 
-inline bool str_starts_with(const std::string & str, const char * prefix)
-  { return !strncmp(str.c_str(), prefix, strlen(prefix)); }
+inline bool str_starts_with(const std::string &str, const char *prefix) {
+  return !strncmp(str.c_str(), prefix, strlen(prefix));
+}
 
 #ifndef HAVE_WORKING_SNPRINTF
 // Substitute by safe replacement functions
 int safe_snprintf(char *buf, int size, const char *fmt, ...)
     __attribute_format_printf(3, 4);
 int safe_vsnprintf(char *buf, int size, const char *fmt, va_list ap);
-#define snprintf  safe_snprintf
+#define snprintf safe_snprintf
 #define vsnprintf safe_vsnprintf
 #endif
 
 #ifndef HAVE_STRTOULL
 // Replacement for missing strtoull() (Linux with libc < 6, MSVC)
-uint64_t strtoull(const char * p, char * * endp, int base);
+uint64_t strtoull(const char *p, char **endp, int base);
 #endif
 
 // Utility function prints current date and time and timezone into a
@@ -86,8 +90,7 @@ void dateandtimezoneepoch(char *buffer, time_t tval);
 // although the prototype is given here in utility.h, the function
 // itself is defined differently in smartctl and smartd.  So the
 // function definition(s) are in smartd.c and in smartctl.c.
-void pout(const char *fmt, ...)  
-    __attribute_format_printf(1, 2);
+void pout(const char *fmt, ...) __attribute_format_printf(1, 2);
 
 // replacement for perror() with redirected output.
 void syserror(const char *message);
@@ -97,12 +100,12 @@ int split_selective_arg(char *s, uint64_t *start, uint64_t *stop, int *mode);
 
 // Replacement for exit(status)
 // (exit is not compatible with C++ destructors)
-#define EXIT(status) { throw (int)(status); }
+#define EXIT(status)                                                           \
+  { throw(int)(status); }
 
 // Compile time check of byte ordering
 // (inline const function allows compiler to remove dead code)
-inline bool isbigendian()
-{
+inline bool isbigendian() {
 #ifdef WORDS_BIGENDIAN
   return true;
 #else
@@ -119,50 +122,48 @@ void check_config();
 const char *packetdevicetype(int type);
 
 // returns true if any of the n bytes are nonzero, else zero.
-bool nonempty(const void * data, int size);
+bool nonempty(const void *data, int size);
 
 // needed to fix glibc bug
 void FixGlibcTimeZoneBug();
 
 // Copy not null terminated char array to null terminated string.
 // Replace non-ascii characters.  Remove leading and trailing blanks.
-const char * format_char_array(char * str, int strsize, const char * chr, int chrsize);
+const char *format_char_array(char *str, int strsize, const char *chr,
+                              int chrsize);
 
 // Version for fixed size buffers.
-template<size_t STRSIZE, size_t CHRSIZE>
-inline const char * format_char_array(char (& str)[STRSIZE], const char (& chr)[CHRSIZE])
-  { return format_char_array(str, (int)STRSIZE, chr, (int)CHRSIZE); }
+template <size_t STRSIZE, size_t CHRSIZE>
+inline const char *format_char_array(char (&str)[STRSIZE],
+                                     const char (&chr)[CHRSIZE]) {
+  return format_char_array(str, (int)STRSIZE, chr, (int)CHRSIZE);
+}
 
 // Format integer with thousands separator
-const char * format_with_thousands_sep(char * str, int strsize, uint64_t val,
-                                       const char * thousands_sep = 0);
+const char *format_with_thousands_sep(char *str, int strsize, uint64_t val,
+                                      const char *thousands_sep = 0);
 
 // Format capacity with SI prefixes
-const char * format_capacity(char * str, int strsize, uint64_t val,
-                             const char * decimal_point = 0);
+const char *format_capacity(char *str, int strsize, uint64_t val,
+                            const char *decimal_point = 0);
 
 // Wrapper class for a raw data buffer
-class raw_buffer
-{
+class raw_buffer {
 public:
   explicit raw_buffer(unsigned sz, unsigned char val = 0)
-    : m_data(new unsigned char[sz]),
-      m_size(sz)
-    { memset(m_data, val, m_size); }
+      : m_data(new unsigned char[sz]), m_size(sz) {
+    memset(m_data, val, m_size);
+  }
 
-  ~raw_buffer()
-    { delete [] m_data; }
+  ~raw_buffer() { delete[] m_data; }
 
-  unsigned size() const
-    { return m_size; }
+  unsigned size() const { return m_size; }
 
-  unsigned char * data()
-    { return m_data; }
-  const unsigned char * data() const
-    { return m_data; }
+  unsigned char *data() { return m_data; }
+  const unsigned char *data() const { return m_data; }
 
 private:
-  unsigned char * m_data;
+  unsigned char *m_data;
   unsigned m_size;
 
   raw_buffer(const raw_buffer &);
@@ -170,57 +171,50 @@ private:
 };
 
 /// Wrapper class for FILE *.
-class stdio_file
-{
+class stdio_file {
 public:
-  explicit stdio_file(FILE * f = 0, bool owner = false)
-    : m_file(f), m_owner(owner) { }
+  explicit stdio_file(FILE *f = 0, bool owner = false)
+      : m_file(f), m_owner(owner) {}
 
-  stdio_file(const char * name, const char * mode)
-    : m_file(fopen(name, mode)), m_owner(true) { }
+  stdio_file(const char *name, const char *mode)
+      : m_file(fopen(name, mode)), m_owner(true) {}
 
-  ~stdio_file()
-    {
-      if (m_file && m_owner)
-        fclose(m_file);
-    }
+  ~stdio_file() {
+    if (m_file && m_owner)
+      fclose(m_file);
+  }
 
-  bool open(const char * name, const char * mode)
-    {
-      if (m_file && m_owner)
-        fclose(m_file);
-      m_file = fopen(name, mode);
-      m_owner = true;
-      return !!m_file;
-    }
+  bool open(const char *name, const char *mode) {
+    if (m_file && m_owner)
+      fclose(m_file);
+    m_file = fopen(name, mode);
+    m_owner = true;
+    return !!m_file;
+  }
 
-  void open(FILE * f, bool owner = false)
-    {
-      if (m_file && m_owner)
-        fclose(m_file);
-      m_file = f;
-      m_owner = owner;
-    }
+  void open(FILE *f, bool owner = false) {
+    if (m_file && m_owner)
+      fclose(m_file);
+    m_file = f;
+    m_owner = owner;
+  }
 
-  bool close()
-    {
-      if (!m_file)
-        return true;
-      bool ok = !ferror(m_file);
-      if (fclose(m_file))
-        ok = false;
-      m_file = 0;
-      return ok;
-    }
+  bool close() {
+    if (!m_file)
+      return true;
+    bool ok = !ferror(m_file);
+    if (fclose(m_file))
+      ok = false;
+    m_file = 0;
+    return ok;
+  }
 
-  operator FILE * ()
-    { return m_file; }
+  operator FILE *() { return m_file; }
 
-  bool operator!() const
-    { return !m_file; }
+  bool operator!() const { return !m_file; }
 
 private:
-  FILE * m_file;
+  FILE *m_file;
   bool m_owner;
 
   stdio_file(const stdio_file &);
@@ -229,51 +223,49 @@ private:
 
 /// Wrapper class for regex(3).
 /// Supports copy & assignment and is compatible with STL containers.
-class regular_expression
-{
+class regular_expression {
 public:
   // Construction & assignment
   regular_expression();
 
-  regular_expression(const char * pattern, int flags,
+  regular_expression(const char *pattern, int flags,
                      bool throw_on_error = true);
 
   ~regular_expression();
 
-  regular_expression(const regular_expression & x);
+  regular_expression(const regular_expression &x);
 
-  regular_expression & operator=(const regular_expression & x);
+  regular_expression &operator=(const regular_expression &x);
 
   /// Set and compile new pattern, return false on error.
-  bool compile(const char * pattern, int flags);
+  bool compile(const char *pattern, int flags);
 
   // Get pattern from last compile().
-  const char * get_pattern() const
-    { return m_pattern.c_str(); }
+  const char *get_pattern() const { return m_pattern.c_str(); }
 
   /// Get error message from last compile().
-  const char * get_errmsg() const
-    { return m_errmsg.c_str(); }
+  const char *get_errmsg() const { return m_errmsg.c_str(); }
 
   // Return true if pattern is not set or bad.
-  bool empty() const
-    { return (m_pattern.empty() || !m_errmsg.empty()); }
+  bool empty() const { return (m_pattern.empty() || !m_errmsg.empty()); }
 
   /// Return true if substring matches pattern
-  bool match(const char * str, int flags = 0) const
-    { return !regexec(&m_regex_buf, str, 0, (regmatch_t*)0, flags); }
+  bool match(const char *str, int flags = 0) const {
+    return !regexec(&m_regex_buf, str, 0, (regmatch_t *)0, flags);
+  }
 
   /// Return true if full string matches pattern
-  bool full_match(const char * str, int flags = 0) const
-    {
-      regmatch_t range;
-      return (   !regexec(&m_regex_buf, str, 1, &range, flags)
-              && range.rm_so == 0 && range.rm_eo == (int)strlen(str));
-    }
+  bool full_match(const char *str, int flags = 0) const {
+    regmatch_t range;
+    return (!regexec(&m_regex_buf, str, 1, &range, flags) && range.rm_so == 0 &&
+            range.rm_eo == (int)strlen(str));
+  }
 
   /// Return true if substring matches pattern, fill regmatch_t array.
-  bool execute(const char * str, unsigned nmatch, regmatch_t * pmatch, int flags = 0) const
-    { return !regexec(&m_regex_buf, str, nmatch, pmatch, flags); }
+  bool execute(const char *str, unsigned nmatch, regmatch_t *pmatch,
+               int flags = 0) const {
+    return !regexec(&m_regex_buf, str, nmatch, pmatch, flags);
+  }
 
 private:
   std::string m_pattern;
@@ -282,7 +274,7 @@ private:
   std::string m_errmsg;
 
   void free_buf();
-  void copy(const regular_expression & x);
+  void copy(const regular_expression &x);
   bool compile();
 };
 
@@ -292,13 +284,11 @@ private:
 std::string get_exe_dir();
 #endif
 
-
 #ifdef OLD_INTERFACE
 // remaining controller types in old interface modules
-#define CONTROLLER_UNKNOWN              0x00
-#define CONTROLLER_ATA                  0x01
-#define CONTROLLER_SCSI                 0x02
+#define CONTROLLER_UNKNOWN 0x00
+#define CONTROLLER_ATA 0x01
+#define CONTROLLER_SCSI 0x02
 #endif
 
 #endif
-
