@@ -59,7 +59,9 @@ class Client {
 public:
   /**
    * @brief GetSmartCtl provides the interface to retrieve an instance of the
-   * singleton class Client.
+   * singleton class Client.  Currently only the default "normal" SMART command
+   * failure tolerance is available.  Options for failure tolerance will come at
+   * a future release.
    *
    * @return reference to the instance of Client.  Will throw a runtime error if
    * initialization routines do not succeed.
