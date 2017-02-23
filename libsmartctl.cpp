@@ -57,22 +57,7 @@ const char *smartctl_cpp_cvsid = "$Id$" CONFIG_H_CVSID SMARTCTL_H_CVSID;
 
 // Will remove after abstracting out lib matrial from ataprint.cpp
 // START HERE
-void pout(const char *fmt, ...) {
-  va_list ap;
-
-  // initialize variable argument list
-  va_start(ap, fmt);
-  if (printing_is_off) {
-    va_end(ap);
-    return;
-  }
-
-  // print out
-  vprintf(fmt, ap);
-  va_end(ap);
-  fflush(stdout);
-  return;
-}
+void pout(const char *fmt, ...) { return; }
 
 // Globals to control printing
 bool printing_is_switchable = false;
@@ -108,6 +93,8 @@ void checksumwarning(const char *string) {
 bool failuretest_conservative = false;
 unsigned char failuretest_permissive = 0;
 
+// Need to stay here until we refactor ataprint.cpp to break common components
+// needed for the libsmartctl and smartctl.
 // Compares failure type to policy in effect, and either exits or
 // simply returns to the calling routine.
 // Used in ataprint.cpp and scsiprint.cpp.

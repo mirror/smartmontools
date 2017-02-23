@@ -4146,20 +4146,15 @@ ctlerr_t
 get_ata_vendor_attr(std::vector<std::map<std::string, std::string>> &results,
                     ata_device *device, const ata_print_options &options) {
 
-  // bool need_smart_val = true;
-  // bool need_smart_logdir = false;
-  // bool need_gp_logdir = false;
-
   ata_identify_device drive;
   memset(&drive, 0, sizeof(drive));
   unsigned char raw_drive[sizeof(drive)];
   memset(&raw_drive, 0, sizeof(raw_drive));
 
   device->clear_err();
-  int retid =
-      ata_read_identity(device, &drive, options.fix_swapped_id, raw_drive);
-  if (retid < 0) {
-    return FAILEDDEVICEIDREAD;
+
+  if (!ataDoesSmartWork(device)) {
+    return FAILEDSMARTCMD;
   }
 
   ata_vendor_attr_defs attribute_defs = options.attribute_defs;
@@ -4171,30 +4166,6 @@ get_ata_vendor_attr(std::vector<std::map<std::string, std::string>> &results,
   ata_size_info sizes;
   ata_get_size_info(&drive, sizes);
   int rpm = ata_get_rotation_rate(&drive);
-
-  // Check for ATA Security LOCK
-  // unsigned short word128 = drive.words088_255[128 - 88];
-  // bool locked = ((word128 & 0x0007) == 0x0007);
-
-  // Disk device: SMART supported and enabled ?
-  int smart_supported = ataSmartSupport(&drive);
-  int smart_enabled = ataIsSmartEnabled(&drive);
-
-  if (ataDoesSmartWork(device)) {
-    smart_supported = smart_enabled = 1;
-  }
-  if (smart_supported < 0 && (smart_enabled > 0 || dbentry)) {
-    // Assume supported if enabled or in drive database
-    smart_supported = 1;
-  }
-
-  // Exit if SMART is not supported but must be available to proceed
-  if (smart_supported <= 0) {
-    bool ok = softfailuretest(MANDATORY_CMD);
-    if (!ok) {
-      return FAILEDSMARTCMD;
-    }
-  }
 
   // Read SMART values and thresholds if necessary
   ata_smart_values smartval;
@@ -4238,97 +4209,6 @@ get_ata_vendor_attr(std::vector<std::map<std::string, std::string>> &results,
 ctlerr_t get_ata_information(std::map<std::string, std::string> &results,
                              ata_device *device,
                              const ata_print_options &options) {
-  // Not sure we need this flag.  Keeping here for now.
-  bool need_smart_support = false;
-  // If requested, check power mode first
-  const char *powername = 0;
-  bool powerchg = false;
-  if (options.powermode) {
-    unsigned char powerlimit = 0xff;
-    int powermode = ataCheckPowerMode(device);
-    // TODO: Move to new function used by smartctl and smartd.
-    switch (powermode) {
-    case -1:
-      if (device->is_syscall_unsup()) {
-        powername = "NOT_IMPLEMENTED";
-        break;
-      }
-      powername = "SLEEP";
-      powerlimit = 2;
-      break;
-    // Table 215 of T13/2015-D (ACS-2) Revision 7, June 22, 2011
-    // Table 293 of T13/BSR INCITS 529 (ACS-4) Revision 12, February 18, 2016
-    case 0x00: // PM2:Standby, EPC unavailable or Standby_z power condition
-      powername = "STANDBY";
-      powerlimit = 3;
-      break;
-    case 0x01: // PM2:Standby, Standby_y power condition
-      powername = "STANDBY_Y";
-      powerlimit = 3;
-      break;
-    case 0x80: // PM1:Idle, EPC unavailable
-      powername = "IDLE";
-      powerlimit = 4;
-      break;
-    case 0x81: // PM1:Idle, Idle_a power condition
-      powername = "IDLE_A";
-      powerlimit = 4;
-      break;
-    case 0x82: // PM1:Idle, Idle_b power condition
-      powername = "IDLE_B";
-      powerlimit = 4;
-      break;
-    case 0x83: // PM1:Idle, Idle_c power condition
-      powername = "IDLE_C";
-      powerlimit = 4;
-      break;
-    // 0x40/41 were declared obsolete in ACS-3 Revision 1
-    case 0x40: // PM0:Active, NV Cache power mode enabled, spun down
-      powername = "ACTIVE_NV_DOWN";
-      break;
-    case 0x41: // PM0:Active, NV Cache power mode enabled, spun up
-      powername = "ACTIVE_NV_UP";
-      break;
-    case 0xff: // PM0:Active or PM1:Idle
-      powername = "ACTIVE or IDLE";
-      break;
-
-    default:
-      char buf[100];
-      sprintf(buf, "unknown value 0x%02x, ignoring -n option", powermode);
-      powername = buf;
-      break;
-    }
-
-    // This function block only needs after power check logic is moved out.
-    // Unreachable now.
-    // Low power mode check
-    if (powername) {
-      if (options.powermode >= powerlimit) {
-        return POWERMODEBELOWOPTION;
-      }
-      powerchg = (powermode != 0xff); // SMART tests will spin up drives
-    }
-  }
-
-  // SMART and GP log directories needed ?
-  bool need_smart_logdir =
-      (options.smart_logdir ||
-       options.devstat_all_pages // devstat fallback to smartlog if needed
-       || options.devstat_ssd_page || !options.devstat_pages.empty());
-
-  bool need_gp_logdir =
-      (options.gp_logdir || options.smart_ext_error_log ||
-       options.smart_ext_selftest_log || options.devstat_all_pages ||
-       options.devstat_ssd_page || !options.devstat_pages.empty());
-
-  unsigned i;
-  for (i = 0; i < options.log_requests.size(); i++) {
-    if (options.log_requests[i].gpl)
-      need_gp_logdir = true;
-    else
-      need_smart_logdir = true;
-  }
 
   // Start by getting Drive ID information.  We need this, to know if SMART is
   // supported.
@@ -4388,14 +4268,12 @@ ctlerr_t get_ata_information(std::map<std::string, std::string> &results,
     smart_enabled = ataIsSmartEnabled(&drive);
 
     if (smart_supported && smart_enabled < 0) {
-      if (need_smart_support) {
-        bool ok = softfailuretest(MANDATORY_CMD);
-        if (!ok) {
-          return FAILEDSMARTCMD;
-        }
-        // check SMART support by trying a command
-        if (ataDoesSmartWork(device))
+      // double check status by performing tests
+      bool ok = softfailuretest(MANDATORY_CMD);
+      if (ok) {
+        if (ataDoesSmartWork(device)) {
           smart_supported = smart_enabled = 1;
+        }
       }
 
     } else if (smart_supported < 0 && (smart_enabled > 0 || dbentry)) {
@@ -4404,8 +4282,7 @@ ctlerr_t get_ata_information(std::map<std::string, std::string> &results,
     }
 
     if (smart_supported < 0) {
-      results["smart_supported"] =
-          "unknown - - Try option -s with argument 'on' to enable";
+      results["smart_supported"] = "unknown - Try to enable with smartctl";
 
     } else if (!smart_supported) {
       results["smart_supported"] = "no";
@@ -4422,210 +4299,6 @@ ctlerr_t get_ata_information(std::map<std::string, std::string> &results,
         }
 
         results["smart_enabled"] = (smart_enabled ? "yes" : "no");
-      }
-    }
-  }
-
-  // Print the (now possibly changed) power mode if available
-  if (powername) {
-    results["power_mode"] =
-        strprintf("%s %s", (powerchg ? "was:" : "is: "), powername);
-  }
-
-  return NOERR;
-}
-
-ctlerr_t get_ata_other(std::map<std::string, std::string> &results,
-                       ata_device *device, const ata_print_options &options) {
-
-  // bool need_smart_val = true;
-  // bool need_smart_logdir = false;
-  // bool need_gp_logdir = false;
-
-  ata_identify_device drive;
-  memset(&drive, 0, sizeof(drive));
-  unsigned char raw_drive[sizeof(drive)];
-  memset(&raw_drive, 0, sizeof(raw_drive));
-
-  device->clear_err();
-  int retid =
-      ata_read_identity(device, &drive, options.fix_swapped_id, raw_drive);
-  if (retid < 0) {
-    return FAILEDDEVICEIDREAD;
-  }
-
-  ata_vendor_attr_defs attribute_defs = options.attribute_defs;
-  firmwarebug_defs firmwarebugs = options.firmwarebugs;
-  const drive_settings *dbentry = 0;
-  if (!options.ignore_presets)
-    dbentry = lookup_drive_apply_presets(&drive, attribute_defs, firmwarebugs);
-  // Get capacity, sector sizes and rotation rate
-  ata_size_info sizes;
-  ata_get_size_info(&drive, sizes);
-  int rpm = ata_get_rotation_rate(&drive);
-
-  // Check for ATA Security LOCK
-  // unsigned short word128 = drive.words088_255[128 - 88];
-  // bool locked = ((word128 & 0x0007) == 0x0007);
-
-  // Disk device: SMART supported and enabled ?
-  int smart_supported = ataSmartSupport(&drive);
-  int smart_enabled = ataIsSmartEnabled(&drive);
-
-  if (ataDoesSmartWork(device)) {
-    smart_supported = smart_enabled = 1;
-  }
-  if (smart_supported < 0 && (smart_enabled > 0 || dbentry)) {
-    // Assume supported if enabled or in drive database
-    smart_supported = 1;
-  }
-
-  // Exit if SMART is not supported but must be available to proceed
-  if (smart_supported <= 0) {
-    bool ok = softfailuretest(MANDATORY_CMD);
-    if (!ok) {
-      return FAILEDSMARTCMD;
-    }
-  }
-
-  // MOST OF THE BELOW IS UNSUPPORTED/UNREACHABLE FOR NOW.  WE NEED TO PROVIDE A
-  // BETTER INTERFACE FOR THOSE OTHER THAN INFO
-  // Print AAM status
-  if (options.get_aam) {
-    if ((drive.command_set_2 & 0xc200) != 0x4200) { // word083
-      pout("AAM feature is:   Unavailable\n");
-      results["aam_available"] = "no";
-
-    } else if (!(drive.word086 & 0x0200)) {
-      pout("AAM feature is:   Disabled\n");
-      results["aam_available"] = "yes";
-      results["aam_enabled"] = "no";
-
-    } else {
-      print_aam_level("AAM level is:     ", drive.words088_255[94 - 88] & 0xff,
-                      drive.words088_255[94 - 88] >> 8);
-      results["aam_available"] = "yes";
-      results["aam_enabled"] = "yes";
-
-      int level = drive.words088_255[94 - 88] & 0xff;
-      results["aam_level"] =
-          strprintf("%s - level %d", get_aam_level(level), level);
-      results["aam_recommended_level"] = (drive.words088_255[94 - 88] >> 8);
-    }
-  }
-
-  // Print APM status
-  if (options.get_apm) {
-    if ((drive.command_set_2 & 0xc008) != 0x4008) { // word083
-      results["apm_available"] = "no";
-
-    } else if (!(drive.word086 & 0x0008)) {
-      results["apm_available"] = "yes";
-      results["apm_enabled"] = "no";
-
-    } else {
-      results["apm_available"] = "yes";
-      results["apm_enabled"] = "yes";
-      results["apm_level"] = drive.words088_255[91 - 88] & 0xff;
-    }
-  }
-
-  // Print read look-ahead status
-  if (options.get_lookahead) {
-    pout("Rd look-ahead is: %s\n",
-         ((drive.command_set_2 & 0xc000) != 0x4000 // word083
-          || !(drive.command_set_1 & 0x0040))
-             ? "Unavailable"
-             : // word082
-             !(drive.cfs_enable_1 & 0x0040) ? "Disabled"
-                                            : "Enabled"); // word085
-    results["read_lookahead"] =
-        (((drive.command_set_2 & 0xc000) != 0x4000 // word083
-          || !(drive.command_set_1 & 0x0040))
-             ? "Unavailable"
-             : // word082
-             !(drive.cfs_enable_1 & 0x0040) ? "Disabled" : "Enabled");
-  }
-
-  // Print write cache status
-  if (options.get_wcache) {
-    results["write_cache"] =
-        (((drive.command_set_2 & 0xc000) != 0x4000 // word083
-          || !(drive.command_set_1 & 0x0020))
-             ? "Unavailable"
-             : // word082
-             !(drive.cfs_enable_1 & 0x0020) ? "Disabled" : "Enabled");
-  }
-
-  // Check for ATA Security LOCK
-  unsigned short word128 = drive.words088_255[128 - 88];
-  bool locked = ((word128 & 0x0007) == 0x0007); // LOCKED|ENABLED|SUPPORTED
-
-  // Print ATA Security status
-  if (options.get_security) {
-    results["ata_security"] = word128;
-  }
-
-  // Print write cache reordering status
-  if (options.sct_wcache_reorder_get) {
-    if (!isSCTFeatureControlCapable(&drive)) {
-      results["write_cache_reorder_available"] = "no";
-
-    } else if (locked) {
-      results["write_cache_reorder_available"] =
-          "unknown - SCT not supported if ATA Security is "
-          "LOCKED";
-    }
-
-    else {
-      int wcache_reorder = ataGetSetSCTWriteCacheReordering(
-          device, false /*enable*/, false /*persistent*/, false /*set*/);
-
-      if (-1 <= wcache_reorder && wcache_reorder <= 2) {
-        results["write_cache_reorder_available"] =
-            ((wcache_reorder == -1
-                  ? "Unknown (SCT Feature Control command failed)"
-                  : wcache_reorder == 0 ? "Unknown" : // not defined in standard
-                                                      // but returned on some
-                                                      // drives if not set
-                        wcache_reorder == 1 ? "Enabled" : "Disabled"));
-
-      } else {
-        results["write_cache_reorder_available"] =
-            strprintf("unknown (0x%02x)", wcache_reorder);
-      }
-    }
-  }
-
-  const char *sct_write_cache_state_desc[4] = {
-      "Unknown", // 0: not defined in standard but returned on some drives if
-                 // not set
-      "Controlled by ATA", // 1: controlled ATA Set Features command
-      "Force Enabled",     // 2
-      "Force Disabled"     // 3
-  };
-
-  // Print SCT feature control of write cache
-  if (options.sct_wcache_sct_get) {
-    if (!isSCTFeatureControlCapable(&drive)) {
-      results["sct_write_cache_control_available"] = "no";
-
-    } else if (locked) {
-      results["sct_write_cache_control_available"] =
-          "unknown - SCT not supported if ATA "
-          "Security is LOCKED";
-
-    } else {
-      int state = ataGetSetSCTWriteCache(device, 1, false /*persistent*/,
-                                         false /*set*/);
-      if (-1 <= state && state <= 3) {
-        results["sct_write_cache_control_available"] =
-            ((state == -1 ? "Unknown (SCT Feature Control command failed)"
-                          : sct_write_cache_state_desc[state]));
-
-      } else {
-        results["sct_write_cache_control_available"] =
-            strprintf("unknown (0x%02x)", state);
       }
     }
   }
