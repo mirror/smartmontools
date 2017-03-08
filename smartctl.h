@@ -81,16 +81,6 @@ extern unsigned char failuretest_permissive;
 // simply returns to the calling routine.
 void failuretest(failure_type type, int returnvalue);
 
-// Failure types used by libsmartctl specific functions
-enum ctlerr_t {
-  NOERR = 1,
-  POWERMODEBELOWOPTION,
-  FAILEDDEVICEIDREAD,
-  FAILEDSMARTCMD,
-  GETDEVICERR,
-  DEVICEOPENERR,
-};
-
 /*
 * @brief Compares failure type to policy.
 *

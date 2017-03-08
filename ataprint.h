@@ -32,6 +32,7 @@
 
 #include "dev_interface.h"
 #include "smartctl.h"
+#include "smartctl_errs.h"
 
 // Request to dump a GP or SMART log
 struct ata_log_request {
@@ -148,6 +149,8 @@ int ataPrintMain(ata_device *device, const ata_print_options &options);
 
 void get_ata(std::map<std::string, std::string> &results, ata_device *device,
              const ata_print_options &options);
+
+bool cant_id(ata_device *device);
 
 ctlerr_t get_ata_information(std::map<std::string, std::string> &results,
                              ata_device *device,

@@ -39,11 +39,10 @@
 #include "knowndrives.h"
 #include "scsicmds.h"
 #include "scsiprint.h"
+#include "smartctl_errs.h"
 #include "utility.h"
 
 namespace libsmartctl {
-
-std::string errstr(ctlerr_t err);
 
 struct DevInfoResp {
   std::map<std::string, std::string> content;
@@ -55,10 +54,15 @@ struct DevVendorAttrsResp {
   ctlerr_t err;
 };
 
+struct CantIdDevResp {
+  bool content;
+  ctlerr_t err;
+};
+
 class Client {
 public:
   /**
-   * @brief GetSmartCtl provides the interface to retrieve an instance of the
+   * @brief getClient provides the interface to retrieve an instance of the
    * singleton class Client.  Currently only the default "normal" SMART command
    * failure tolerance is available.  Options for failure tolerance will come at
    * a future release.
@@ -67,6 +71,21 @@ public:
    * initialization routines do not succeed.
    */
   static Client &getClient();
+
+  /**
+   * @brief Checks if device name of the param type can be identified.
+   * Gaurantees if true, the device is not identifiable, but if true, it still
+   * necessarily mean device is identifiable.
+   *
+   * @param String of full path device name.
+   *
+   * @param C string of device type, if left blank, auto device type detection
+   * will be used.
+   *
+   * @return struct containing an err type and a boolean indicating if the the
+   * device can't be IDed, meaning if it can't -> return true.
+   */
+  CantIdDevResp cantIdDev(std::string const &devname, const char *type);
 
   /**
    *@brief Retrieves drive information.

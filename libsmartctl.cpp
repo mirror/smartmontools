@@ -190,6 +190,22 @@ ctlerr_t Client::initDevice(smart_device_auto_ptr &device,
   return NOERR;
 }
 
+CantIdDevResp Client::cantIdDev(std::string const &devname, const char *type) {
+  CantIdDevResp resp = {};
+
+  smart_device_auto_ptr device;
+  resp.err = initDevice(device, devname, type);
+  if (resp.err != NOERR) {
+    return resp;
+  }
+
+  if (device->is_ata()) {
+    resp.content = cant_id(device->to_ata());
+  }
+
+  return resp;
+}
+
 DevInfoResp Client::getDevInfo(std::string const &devname, const char *type) {
   DevInfoResp resp = {};
 
