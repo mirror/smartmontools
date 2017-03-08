@@ -267,6 +267,7 @@ EXTRA_libsmartctl_a_SOURCES = \
 smartmontoolsdir = $(includedir)/smartmontools
 smartmontools_HEADERS = \
         libsmartctl.h \
+        smartctl_errs.h \
         atacmds.h \
         ataprint.h \
         dev_interface.h \

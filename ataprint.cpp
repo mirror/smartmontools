@@ -42,6 +42,7 @@
 #include "int64.h"
 #include "knowndrives.h"
 #include "smartctl.h"
+#include "smartctl_errs.h"
 #include "utility.h"
 
 const char *ataprint_cpp_cvsid = "$Id$" ATAPRINT_H_CVSID;
@@ -3950,7 +3951,7 @@ static void get_drive_info(std::map<std::string, std::string> &results,
     }
   }
 
-  results["firware_version"] = infofound(firmware);
+  results["firmware_version"] = infofound(firmware);
 
   if (sizes.capacity) {
     // Print capacity
@@ -4206,6 +4207,19 @@ get_ata_vendor_attr(std::vector<std::map<std::string, std::string>> &results,
   return NOERR;
 }
 
+bool cant_id(ata_device *device) {
+  ata_identify_device drive;
+  memset(&drive, 0, sizeof(drive));
+
+  if ((smartcommandhandler(device, IDENTIFY, 0, (char *)&drive))) {
+    if (smartcommandhandler(device, PIDENTIFY, 0, (char *)&drive)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 ctlerr_t get_ata_information(std::map<std::string, std::string> &results,
                              ata_device *device,
                              const ata_print_options &options) {
@@ -4221,22 +4235,8 @@ ctlerr_t get_ata_information(std::map<std::string, std::string> &results,
   int retid =
       ata_read_identity(device, &drive, options.fix_swapped_id, raw_drive);
 
-  if (retid < 0) {
-    results["read_device_identity_failure"] =
-        (device->get_errno() ? device->get_errmsg() : "Unknown error");
-
-    bool ok = softfailuretest(MANDATORY_CMD);
-    if (!ok) {
-      return FAILEDDEVICEIDREAD;
-    }
-
-  } else if (!nonempty(&drive, sizeof(drive))) {
-    results["read_device_identity_failure"] = "empty IDENTIFY data";
-
-    bool ok = softfailuretest(MANDATORY_CMD);
-    if (!ok) {
-      return FAILEDDEVICEIDREAD;
-    }
+  if (retid < 0 || !nonempty(&drive, sizeof(drive))) {
+    return FAILEDDEVICEIDREAD;
   }
 
   // Use preset vendor attribute options unless user has requested otherwise.
@@ -4268,12 +4268,8 @@ ctlerr_t get_ata_information(std::map<std::string, std::string> &results,
     smart_enabled = ataIsSmartEnabled(&drive);
 
     if (smart_supported && smart_enabled < 0) {
-      // double check status by performing tests
-      bool ok = softfailuretest(MANDATORY_CMD);
-      if (ok) {
-        if (ataDoesSmartWork(device)) {
-          smart_supported = smart_enabled = 1;
-        }
+      if (ataDoesSmartWork(device)) {
+        smart_supported = smart_enabled = 1;
       }
 
     } else if (smart_supported < 0 && (smart_enabled > 0 || dbentry)) {
