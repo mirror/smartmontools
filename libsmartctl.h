@@ -69,23 +69,30 @@ public:
   static Client &getClient();
 
   /**
-   *@brief Retrieves drive information
+   *@brief Retrieves drive information.
    *
-   * @param string of full path device name
+   * @param String of full path device name.
    *
-   * @return map of information type and value, both strings
+   * @param C string of device type, if left blank, auto device type detection
+   * will be used.
+   *
+   * @return Map of information type and value, both strings.
    */
-  DevInfoResp getDevInfo(std::string const &devname);
+  DevInfoResp getDevInfo(std::string const &devname, const char *type = 0);
 
   /**
    *@brief Retrieves drive vendor attributes
    *
    * @param string of full path device name
    *
+   * @param C string of device type, if left blank, auto device type detection
+   * will be used.
+   *
    * @return a vector maps containing string key and values of vendor attribute
    *type name and attribute type values
    */
-  DevVendorAttrsResp getDevVendorAttrs(std::string const &devname);
+  DevVendorAttrsResp getDevVendorAttrs(std::string const &devname,
+                                       const char *type = 0);
 
   Client(Client const &l) = delete;
   void operator=(Client const &l) = delete;
@@ -95,8 +102,8 @@ private:
   // database.  User supplied drive databases are not supported at this.
   Client();
 
-  ctlerr_t initDevice(smart_device_auto_ptr &device,
-                      std::string const &devname);
+  ctlerr_t initDevice(smart_device_auto_ptr &device, std::string const &devname,
+                      const char *type);
 };
 }
 #endif

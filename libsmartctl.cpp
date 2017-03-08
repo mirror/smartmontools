@@ -170,8 +170,7 @@ Client::Client() {
 }
 
 ctlerr_t Client::initDevice(smart_device_auto_ptr &device,
-                            std::string const &devname) {
-  const char *type = 0;
+                            std::string const &devname, const char *type) {
   device = smi()->get_smart_device(devname.c_str(), type);
   if (!device) {
     return GETDEVICERR;
@@ -191,7 +190,7 @@ ctlerr_t Client::initDevice(smart_device_auto_ptr &device,
   return NOERR;
 }
 
-DevInfoResp Client::getDevInfo(std::string const &devname) {
+DevInfoResp Client::getDevInfo(std::string const &devname, const char *type) {
   DevInfoResp resp = {};
 
   ata_print_options ataopts;
@@ -201,7 +200,7 @@ DevInfoResp Client::getDevInfo(std::string const &devname) {
   ataopts.drive_info = scsiopts.drive_info = nvmeopts.drive_info = true;
 
   smart_device_auto_ptr device;
-  resp.err = initDevice(device, devname);
+  resp.err = initDevice(device, devname, type);
   if (resp.err != NOERR) {
     return resp;
   }
@@ -213,7 +212,8 @@ DevInfoResp Client::getDevInfo(std::string const &devname) {
   return resp;
 }
 
-DevVendorAttrsResp Client::getDevVendorAttrs(std::string const &devname) {
+DevVendorAttrsResp Client::getDevVendorAttrs(std::string const &devname,
+                                             const char *type) {
   DevVendorAttrsResp resp = {};
 
   ata_print_options ataopts;
@@ -224,7 +224,7 @@ DevVendorAttrsResp Client::getDevVendorAttrs(std::string const &devname) {
       nvmeopts.smart_vendor_attrib = true;
 
   smart_device_auto_ptr device;
-  resp.err = initDevice(device, devname);
+  resp.err = initDevice(device, devname, type);
   if (resp.err != NOERR) {
     return resp;
   }
