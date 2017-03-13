@@ -79,39 +79,40 @@ public:
    *
    * @param String of full path device name.
    *
-   * @param C string of device type, if left blank, auto device type detection
+   * @param String of device type, if left blank, auto device type detection
    * will be used.
    *
    * @return struct containing an err type and a boolean indicating if the the
    * device can't be IDed, meaning if it can't -> return true.
    */
-  CantIdDevResp cantIdDev(std::string const &devname, const char *type);
+  CantIdDevResp cantIdDev(std::string const &devname, std::string const &type);
 
   /**
    *@brief Retrieves drive information.
    *
    * @param String of full path device name.
    *
-   * @param C string of device type, if left blank, auto device type detection
+   * @param String of device type, if left blank, auto device type detection
    * will be used.
    *
    * @return Map of information type and value, both strings.
    */
-  DevInfoResp getDevInfo(std::string const &devname, const char *type = 0);
+  DevInfoResp getDevInfo(std::string const &devname,
+                         std::string const &type = "");
 
   /**
    *@brief Retrieves drive vendor attributes
    *
    * @param string of full path device name
    *
-   * @param C string of device type, if left blank, auto device type detection
+   * @param String of device type, if left blank, auto device type detection
    * will be used.
    *
    * @return a vector maps containing string key and values of vendor attribute
    *type name and attribute type values
    */
   DevVendorAttrsResp getDevVendorAttrs(std::string const &devname,
-                                       const char *type = 0);
+                                       std::string const &type = "");
 
   Client(Client const &l) = delete;
   void operator=(Client const &l) = delete;
@@ -122,7 +123,7 @@ private:
   Client();
 
   ctlerr_t initDevice(smart_device_auto_ptr &device, std::string const &devname,
-                      const char *type);
+                      std::string const &type);
 };
 }
 #endif
