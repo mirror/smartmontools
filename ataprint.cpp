@@ -957,39 +957,33 @@ static void PrintSmartOfflineCollectCap(const ata_smart_values *data) {
   if (data->offline_data_collection_capability == 0x00) {
     pout("\tOffline data collection not supported.\n");
   } else {
-    pout("%s\n",
-         isSupportExecuteOfflineImmediate(data)
-             ? "SMART execute Offline immediate."
-             : "No SMART execute Offline immediate.");
+    pout("%s\n", isSupportExecuteOfflineImmediate(data)
+                     ? "SMART execute Offline immediate."
+                     : "No SMART execute Offline immediate.");
 
-    pout("\t\t\t\t\t%s\n",
-         isSupportAutomaticTimer(data)
-             ? "Auto Offline data collection on/off support."
-             : "No Auto Offline data collection support.");
+    pout("\t\t\t\t\t%s\n", isSupportAutomaticTimer(data)
+                               ? "Auto Offline data collection on/off support."
+                               : "No Auto Offline data collection support.");
 
     pout("\t\t\t\t\t%s\n",
          isSupportOfflineAbort(data)
              ? "Abort Offline collection upon new\n\t\t\t\t\tcommand."
              : "Suspend Offline collection upon new\n\t\t\t\t\tcommand.");
 
-    pout("\t\t\t\t\t%s\n",
-         isSupportOfflineSurfaceScan(data)
-             ? "Offline surface scan supported."
-             : "No Offline surface scan supported.");
+    pout("\t\t\t\t\t%s\n", isSupportOfflineSurfaceScan(data)
+                               ? "Offline surface scan supported."
+                               : "No Offline surface scan supported.");
 
-    pout("\t\t\t\t\t%s\n",
-         isSupportSelfTest(data) ? "Self-test supported."
-                                 : "No Self-test supported.");
+    pout("\t\t\t\t\t%s\n", isSupportSelfTest(data) ? "Self-test supported."
+                                                   : "No Self-test supported.");
 
-    pout("\t\t\t\t\t%s\n",
-         isSupportConveyanceSelfTest(data)
-             ? "Conveyance Self-test supported."
-             : "No Conveyance Self-test supported.");
+    pout("\t\t\t\t\t%s\n", isSupportConveyanceSelfTest(data)
+                               ? "Conveyance Self-test supported."
+                               : "No Conveyance Self-test supported.");
 
-    pout("\t\t\t\t\t%s\n",
-         isSupportSelectiveSelfTest(data)
-             ? "Selective Self-test supported."
-             : "No Selective Self-test supported.");
+    pout("\t\t\t\t\t%s\n", isSupportSelectiveSelfTest(data)
+                               ? "Selective Self-test supported."
+                               : "No Selective Self-test supported.");
   }
 }
 
@@ -1106,9 +1100,8 @@ PrintSmartAttribWithThres(const ata_smart_values *data,
       continue;
 
     // These break out of the loop if we are only printing certain entries...
-    if (onlyfailed == 1 &&
-        !(ATTRIBUTE_FLAGS_PREFAILURE(attr.flags) &&
-          state == ATTRSTATE_FAILED_NOW))
+    if (onlyfailed == 1 && !(ATTRIBUTE_FLAGS_PREFAILURE(attr.flags) &&
+                             state == ATTRSTATE_FAILED_NOW))
       continue;
 
     if (onlyfailed == 2 && state < ATTRSTATE_FAILED_PAST)
@@ -1229,10 +1222,9 @@ static void PrintGeneralSmartValues(const ata_smart_values *data,
 
   PrintSmartErrorLogCapability(data, drive);
 
-  pout("\t\t\t\t\t%s\n",
-       isGeneralPurposeLoggingCapable(drive)
-           ? "General Purpose Logging supported."
-           : "No General Purpose Logging support.");
+  pout("\t\t\t\t\t%s\n", isGeneralPurposeLoggingCapable(drive)
+                             ? "General Purpose Logging supported."
+                             : "No General Purpose Logging support.");
 
   if (isSupportSelfTest(data)) {
     PrintSmartShortSelfTestPollingTime(data);
@@ -4100,9 +4092,8 @@ get_smart_attr_w_thres(std::vector<std::map<std::string, std::string>> &results,
       continue;
 
     // These break out of the loop if we are only printing certain entries...
-    if (onlyfailed == 1 &&
-        !(ATTRIBUTE_FLAGS_PREFAILURE(attr.flags) &&
-          state == ATTRSTATE_FAILED_NOW))
+    if (onlyfailed == 1 && !(ATTRIBUTE_FLAGS_PREFAILURE(attr.flags) &&
+                             state == ATTRSTATE_FAILED_NOW))
       continue;
 
     if (onlyfailed == 2 && state < ATTRSTATE_FAILED_PAST)
@@ -4173,32 +4164,10 @@ get_ata_vendor_attr(std::vector<std::map<std::string, std::string>> &results,
   memset(&smartval, 0, sizeof(smartval));
   ata_smart_thresholds_pvt smartthres;
   memset(&smartthres, 0, sizeof(smartthres));
-  bool smart_val_ok = false, smart_thres_ok = false;
-
-  if (ataReadSmartValues(device, &smartval)) {
-    // pout("Read SMART Data failed: %s\n\n", device->get_errmsg());
-    bool ok = softfailuretest(OPTIONAL_CMD);
-    if (!ok) {
-      return FAILEDSMARTCMD;
-    }
-
-  } else {
-    smart_val_ok = true;
-
-    if (ataReadSmartThresholds(device, &smartthres)) {
-      // pout("Read SMART Thresholds failed: %s\n\n", device->get_errmsg());
-      bool ok = softfailuretest(OPTIONAL_CMD);
-      if (!ok) {
-        return FAILEDSMARTCMD;
-      }
-
-    } else {
-      smart_thres_ok = true;
-    }
-  }
 
   // Print vendor-specific attributes
-  if (smart_val_ok) {
+  if (ataReadSmartValues(device, &smartval) == 0 &&
+      ataReadSmartThresholds(device, &smartthres) == 0) {
     get_smart_attr_w_thres(results, &smartval, &smartthres, attribute_defs, rpm,
                            (printing_is_switchable ? 2 : 0),
                            options.output_format);

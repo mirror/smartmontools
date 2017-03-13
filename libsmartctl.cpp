@@ -120,31 +120,6 @@ void failuretest(failure_type type, int returnvalue) {
   throw std::logic_error("failuretest: Unknown type");
 }
 
-/*
-* @brief Compares failure type to policy.
-*
-* @param failure type of either OPTIONAL_CMD or MANDATORY_CMD
-*
-* @return true for pass, false for fail
- */
-bool softfailuretest(failure_type type) {
-  // If this is an error in an "optional" SMART command
-  if (type == OPTIONAL_CMD) {
-    if (!failuretest_conservative)
-      return true;
-    return false;
-  }
-
-  // If this is an error in a "mandatory" SMART command
-  if (type == MANDATORY_CMD) {
-    if (failuretest_permissive--)
-      return true;
-    return false;
-  }
-
-  throw std::logic_error("failuretest: Unknown type");
-}
-
 // END HERE
 
 namespace libsmartctl {
@@ -170,14 +145,17 @@ Client::Client() {
 }
 
 ctlerr_t Client::initDevice(smart_device_auto_ptr &device,
-                            std::string const &devname, const char *type) {
-  device = smi()->get_smart_device(devname.c_str(), type);
+                            std::string const &devname,
+                            std::string const &type) {
+  if (type != "") {
+    device = smi()->get_smart_device(devname.c_str(), type.c_str());
+  } else {
+    device = smi()->get_smart_device(devname.c_str(), nullptr);
+  }
+
   if (!device) {
     return GETDEVICERR;
   }
-
-  smart_device::device_info oldinfo = device->get_info();
-
   // Open with autodetect support, may return 'better' device
   device.replace(device->autodetect_open());
 
@@ -190,12 +168,25 @@ ctlerr_t Client::initDevice(smart_device_auto_ptr &device,
   return NOERR;
 }
 
-CantIdDevResp Client::cantIdDev(std::string const &devname, const char *type) {
+CantIdDevResp Client::cantIdDev(std::string const &devname,
+                                std::string const &type) {
   CantIdDevResp resp = {};
 
   smart_device_auto_ptr device;
-  resp.err = initDevice(device, devname, type);
-  if (resp.err != NOERR) {
+  ctlerr_t err = initDevice(device, devname, type);
+
+  switch (err) {
+  case NOERR:
+    resp.err = NOERR;
+    break;
+
+  case DEVICEOPENERR:
+    resp.err = NOERR;
+    resp.content = true;
+    return resp;
+
+  default:
+    resp.err = err;
     return resp;
   }
 
@@ -206,7 +197,8 @@ CantIdDevResp Client::cantIdDev(std::string const &devname, const char *type) {
   return resp;
 }
 
-DevInfoResp Client::getDevInfo(std::string const &devname, const char *type) {
+DevInfoResp Client::getDevInfo(std::string const &devname,
+                               std::string const &type) {
   DevInfoResp resp = {};
 
   ata_print_options ataopts;
@@ -229,7 +221,7 @@ DevInfoResp Client::getDevInfo(std::string const &devname, const char *type) {
 }
 
 DevVendorAttrsResp Client::getDevVendorAttrs(std::string const &devname,
-                                             const char *type) {
+                                             std::string const &type) {
   DevVendorAttrsResp resp = {};
 
   ata_print_options ataopts;
