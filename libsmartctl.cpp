@@ -53,74 +53,7 @@
 #include "smartctl.h"
 #include "utility.h"
 
-const char *smartctl_cpp_cvsid = "$Id$" CONFIG_H_CVSID SMARTCTL_H_CVSID;
-
-// Will remove after abstracting out lib matrial from ataprint.cpp
-// START HERE
-void pout(const char *fmt, ...) { return; }
-
-// Globals to control printing
-bool printing_is_switchable = false;
-bool printing_is_off = false;
-
-// Values for  --long only options, see parse_options()
-// enum { opt_identify = 1000, opt_scan, opt_scan_open, opt_set, opt_smart };
-
-// Checksum error mode
-enum checksum_err_mode_t {
-  CHECKSUM_ERR_WARN,
-  CHECKSUM_ERR_EXIT,
-  CHECKSUM_ERR_IGNORE
-};
-
-static checksum_err_mode_t checksum_err_mode = CHECKSUM_ERR_WARN;
-
-// Used to warn users about invalid checksums. Called from atacmds.cpp.
-// Action to be taken may be altered by the user.
-void checksumwarning(const char *string) {
-  // user has asked us to ignore checksum errors
-  if (checksum_err_mode == CHECKSUM_ERR_IGNORE)
-    return;
-
-  pout("Warning! %s error: invalid SMART checksum.\n", string);
-
-  // user has asked us to fail on checksum errors
-  if (checksum_err_mode == CHECKSUM_ERR_EXIT)
-    EXIT(FAILSMART);
-}
-
-// Globals to set failuretest() policy
-bool failuretest_conservative = false;
-unsigned char failuretest_permissive = 0;
-
-// Need to stay here until we refactor ataprint.cpp to break common components
-// needed for the libsmartctl and smartctl.
-// Compares failure type to policy in effect, and either exits or
-// simply returns to the calling routine.
-// Used in ataprint.cpp and scsiprint.cpp.
-void failuretest(failure_type type, int returnvalue) {
-  // If this is an error in an "optional" SMART command
-  if (type == OPTIONAL_CMD) {
-    if (!failuretest_conservative)
-      return;
-    pout("An optional SMART command failed: exiting. Remove '-T conservative' "
-         "option to continue.\n");
-    EXIT(returnvalue);
-  }
-
-  // If this is an error in a "mandatory" SMART command
-  if (type == MANDATORY_CMD) {
-    if (failuretest_permissive--)
-      return;
-    pout("A mandatory SMART command failed: exiting. To continue, add one or "
-         "more '-T permissive' options.\n");
-    EXIT(returnvalue);
-  }
-
-  throw std::logic_error("failuretest: Unknown type");
-}
-
-// END HERE
+const char *libsmartctl_cpp_cvsid = "$Id$" CONFIG_H_CVSID LIBSMARTCTL_H_CVSID;
 
 namespace libsmartctl {
 

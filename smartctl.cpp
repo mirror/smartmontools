@@ -834,9 +834,10 @@ static const char *parse_options(int argc, char **argv,
           ataopts.smart_selftest_type = SELECTIVE_SELF_TEST;
         }
       } else if (!strncmp(optarg, "scttempint", sizeof("scstempint") - 1)) {
-        snprintf(extraerror, sizeof(extraerror), "-t scttempint is no longer "
-                                                 "supported, use -l scttempint "
-                                                 "instead\n");
+        snprintf(extraerror, sizeof(extraerror),
+                 "-t scttempint is no longer "
+                 "supported, use -l scttempint "
+                 "instead\n");
         badarg = true;
       } else if (!strncmp(optarg, "vendor,", sizeof("vendor,") - 1)) {
         unsigned subcmd = ~0U;
@@ -1268,31 +1269,6 @@ void failuretest(failure_type type, int returnvalue) {
     pout("A mandatory SMART command failed: exiting. To continue, add one or "
          "more '-T permissive' options.\n");
     EXIT(returnvalue);
-  }
-
-  throw std::logic_error("failuretest: Unknown type");
-}
-
-/*
-* @brief Compares failure type to policy.
-*
-* @param failure type of either OPTIONAL_CMD or MANDATORY_CMD
-*
-* @return true for pass, false for fail
- */
-bool softfailuretest(failure_type type) {
-  // If this is an error in an "optional" SMART command
-  if (type == OPTIONAL_CMD) {
-    if (!failuretest_conservative)
-      return true;
-    return false;
-  }
-
-  // If this is an error in a "mandatory" SMART command
-  if (type == MANDATORY_CMD) {
-    if (failuretest_permissive--)
-      return true;
-    return false;
   }
 
   throw std::logic_error("failuretest: Unknown type");
