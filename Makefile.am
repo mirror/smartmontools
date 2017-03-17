@@ -205,14 +205,18 @@ endif
 libsmartctl_a_SOURCES = \
         libsmartctl.cpp \
         libsmartctl.h \
-        smartctl.h \
+				smartctl.h \
+				smartctl_common.cpp \
+				libsmartctl_ata.cpp \
+				libsmartctl_ata.h \
+				ata_common.cpp \
+				ata_common.h \
         atacmdnames.cpp \
         atacmdnames.h \
         atacmds.cpp \
         atacmds.h \
         ataidentify.cpp \
         ataidentify.h \
-        ataprint.cpp \
         ataprint.h \
         dev_ata_cmd_set.cpp \
         dev_ata_cmd_set.h \
