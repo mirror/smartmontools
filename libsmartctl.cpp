@@ -93,8 +93,6 @@ ctlerr_t Client::initDevice(smart_device_auto_ptr &device,
   device.replace(device->autodetect_open());
 
   if (!device->is_open()) {
-    // std::cerr << "could not open smart device: " << device->get_info_name()
-    //           << device->get_errmsg();
     return DEVICEOPENERR;
   }
 
@@ -125,6 +123,8 @@ CantIdDevResp Client::cantIdDev(std::string const &devname,
 
   if (device->is_ata()) {
     resp.content = cant_id(device->to_ata());
+  } else {
+    resp.err = UNSUPPORTEDDEVICETYPE;
   }
 
   return resp;
@@ -148,6 +148,8 @@ DevInfoResp Client::getDevInfo(std::string const &devname,
 
   if (device->is_ata()) {
     resp.err = get_ata_information(resp.content, device->to_ata(), ataopts);
+  } else {
+    resp.err = UNSUPPORTEDDEVICETYPE;
   }
 
   return resp;
@@ -172,8 +174,10 @@ DevVendorAttrsResp Client::getDevVendorAttrs(std::string const &devname,
 
   if (device->is_ata()) {
     resp.err = get_ata_vendor_attr(resp.content, device->to_ata(), ataopts);
+  } else {
+    resp.err = UNSUPPORTEDDEVICETYPE;
   }
 
   return resp;
 }
-}
+} // namespace libsmartctl
