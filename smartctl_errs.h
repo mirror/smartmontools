@@ -14,6 +14,7 @@ enum ctlerr_t {
   GETDEVICERR,
   // invalid blk device specificied
   DEVICEOPENERR,
+  UNSUPPORTEDDEVICETYPE,
 };
 
 namespace libsmartctl {
