@@ -57,127 +57,148 @@ const char *libsmartctl_cpp_cvsid = "$Id$" CONFIG_H_CVSID LIBSMARTCTL_H_CVSID;
 
 namespace libsmartctl {
 
-Client &Client::getClient() {
-  static Client c;
-  return c;
-}
+class Client::Impl {
 
-// Default constructor
-Client::Client() {
-  check_config();
-  // Initialize interface and check registration
-  smart_interface::init();
-  if (!smi()) {
-    throw std::runtime_error("could not register smart-interface");
+public:
+  static Client::Impl &getClient() {
+    static Client::Impl c;
+    return c;
   }
 
-  // database init has to occur after smart_interface::init();
-  if (!init_drive_database(false)) {
-    throw std::runtime_error("could not init drive db");
-  }
-}
+private:
+  // Default constructor
+  Impl() {
+    check_config();
+    // Initialize interface and check registration
+    smart_interface::init();
+    if (!smi()) {
+      throw std::runtime_error("could not register smart-interface");
+    }
 
-ctlerr_t Client::initDevice(smart_device_auto_ptr &device,
-                            std::string const &devname,
-                            std::string const &type) {
-  if (type != "") {
-    device = smi()->get_smart_device(devname.c_str(), type.c_str());
-  } else {
-    device = smi()->get_smart_device(devname.c_str(), nullptr);
-  }
-
-  if (!device) {
-    return GETDEVICERR;
-  }
-  // Open with autodetect support, may return 'better' device
-  device.replace(device->autodetect_open());
-
-  if (!device->is_open()) {
-    return DEVICEOPENERR;
+    // database init has to occur after smart_interface::init();
+    if (!init_drive_database(false)) {
+      throw std::runtime_error("could not init drive db");
+    }
   }
 
-  return NOERR;
-}
+  ctlerr_t initDevice(smart_device_auto_ptr &device, std::string const &devname,
+                      std::string const &type) {
+    if (type != "") {
+      device = smi()->get_smart_device(devname.c_str(), type.c_str());
+    } else {
+      device = smi()->get_smart_device(devname.c_str(), nullptr);
+    }
+
+    if (!device) {
+      return GETDEVICERR;
+    }
+    // Open with autodetect support, may return 'better' device
+    device.replace(device->autodetect_open());
+
+    if (!device->is_open()) {
+      return DEVICEOPENERR;
+    }
+
+    return NOERR;
+  }
+
+public:
+  CantIdDevResp cantIdDev(std::string const &devname, std::string const &type) {
+    CantIdDevResp resp = {};
+
+    smart_device_auto_ptr device;
+    ctlerr_t err = initDevice(device, devname, type);
+
+    switch (err) {
+    case NOERR:
+      resp.err = NOERR;
+      break;
+
+    case DEVICEOPENERR:
+      resp.err = NOERR;
+      resp.content = true;
+      return resp;
+
+    default:
+      resp.err = err;
+      return resp;
+    }
+
+    if (device->is_ata()) {
+      resp.content = cant_id(device->to_ata());
+    } else {
+      resp.err = UNSUPPORTEDDEVICETYPE;
+    }
+
+    return resp;
+  }
+
+  DevInfoResp getDevInfo(std::string const &devname, std::string const &type) {
+    DevInfoResp resp = {};
+
+    ata_print_options ataopts;
+    scsi_print_options scsiopts;
+    nvme_print_options nvmeopts;
+
+    ataopts.drive_info = scsiopts.drive_info = nvmeopts.drive_info = true;
+
+    smart_device_auto_ptr device;
+    resp.err = initDevice(device, devname, type);
+    if (resp.err != NOERR) {
+      return resp;
+    }
+
+    if (device->is_ata()) {
+      resp.err = get_ata_information(resp.content, device->to_ata(), ataopts);
+    } else {
+      resp.err = UNSUPPORTEDDEVICETYPE;
+    }
+
+    return resp;
+  }
+
+  DevVendorAttrsResp getDevVendorAttrs(std::string const &devname,
+                                       std::string const &type) {
+    DevVendorAttrsResp resp = {};
+
+    ata_print_options ataopts;
+    scsi_print_options scsiopts;
+    nvme_print_options nvmeopts;
+
+    ataopts.smart_vendor_attrib = scsiopts.smart_vendor_attrib =
+        nvmeopts.smart_vendor_attrib = true;
+
+    smart_device_auto_ptr device;
+    resp.err = initDevice(device, devname, type);
+    if (resp.err != NOERR) {
+      return resp;
+    }
+
+    if (device->is_ata()) {
+      resp.err = get_ata_vendor_attr(resp.content, device->to_ata(), ataopts);
+    } else {
+      resp.err = UNSUPPORTEDDEVICETYPE;
+    }
+
+    return resp;
+  }
+};
+
+Client::Client() : impl_(Impl::getClient()) {}
 
 CantIdDevResp Client::cantIdDev(std::string const &devname,
                                 std::string const &type) {
-  CantIdDevResp resp = {};
-
-  smart_device_auto_ptr device;
-  ctlerr_t err = initDevice(device, devname, type);
-
-  switch (err) {
-  case NOERR:
-    resp.err = NOERR;
-    break;
-
-  case DEVICEOPENERR:
-    resp.err = NOERR;
-    resp.content = true;
-    return resp;
-
-  default:
-    resp.err = err;
-    return resp;
-  }
-
-  if (device->is_ata()) {
-    resp.content = cant_id(device->to_ata());
-  } else {
-    resp.err = UNSUPPORTEDDEVICETYPE;
-  }
-
-  return resp;
+  return impl_.cantIdDev(devname, type);
 }
 
 DevInfoResp Client::getDevInfo(std::string const &devname,
                                std::string const &type) {
-  DevInfoResp resp = {};
-
-  ata_print_options ataopts;
-  scsi_print_options scsiopts;
-  nvme_print_options nvmeopts;
-
-  ataopts.drive_info = scsiopts.drive_info = nvmeopts.drive_info = true;
-
-  smart_device_auto_ptr device;
-  resp.err = initDevice(device, devname, type);
-  if (resp.err != NOERR) {
-    return resp;
-  }
-
-  if (device->is_ata()) {
-    resp.err = get_ata_information(resp.content, device->to_ata(), ataopts);
-  } else {
-    resp.err = UNSUPPORTEDDEVICETYPE;
-  }
-
-  return resp;
+  return impl_.getDevInfo(devname, type);
 }
 
 DevVendorAttrsResp Client::getDevVendorAttrs(std::string const &devname,
                                              std::string const &type) {
-  DevVendorAttrsResp resp = {};
-
-  ata_print_options ataopts;
-  scsi_print_options scsiopts;
-  nvme_print_options nvmeopts;
-
-  ataopts.smart_vendor_attrib = scsiopts.smart_vendor_attrib =
-      nvmeopts.smart_vendor_attrib = true;
-
-  smart_device_auto_ptr device;
-  resp.err = initDevice(device, devname, type);
-  if (resp.err != NOERR) {
-    return resp;
-  }
-
-  if (device->is_ata()) {
-    resp.err = get_ata_vendor_attr(resp.content, device->to_ata(), ataopts);
-  } else {
-    resp.err = UNSUPPORTEDDEVICETYPE;
-  }
-
-  return resp;
+  return impl_.getDevVendorAttrs(devname, type);
 }
+
 } // namespace libsmartctl
