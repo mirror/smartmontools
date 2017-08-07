@@ -62,17 +62,6 @@ struct CantIdDevResp {
 class Client {
 public:
   /**
-   * @brief getClient provides the interface to retrieve an instance of the
-   * singleton class Client.  Currently only the default "normal" SMART command
-   * failure tolerance is available.  Options for failure tolerance will come at
-   * a future release.
-   *
-   * @return reference to the instance of Client.  Will throw a runtime error if
-   * initialization routines do not succeed.
-   */
-  static Client &getClient();
-
-  /**
    * @brief Checks if device name of the param type can be identified.
    * Gaurantees if true, the device is not identifiable, but if true, it still
    * necessarily mean device is identifiable.
@@ -114,16 +103,13 @@ public:
   DevVendorAttrsResp getDevVendorAttrs(std::string const &devname,
                                        std::string const &type = "");
 
-  Client(Client const &l) = delete;
-  void operator=(Client const &l) = delete;
-
-private:
-  // Client default constructor intializes the smart interface and default
-  // database.  User supplied drive databases are not supported at this.
+public:
   Client();
 
-  ctlerr_t initDevice(smart_device_auto_ptr &device, std::string const &devname,
-                      std::string const &type);
+private:
+  class Impl;
+
+  Impl &impl_;
 };
-}
+} // namespace libsmartctl
 #endif
