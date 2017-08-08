@@ -47,16 +47,22 @@ namespace libsmartctl {
 struct DevInfoResp {
   std::map<std::string, std::string> content;
   ctlerr_t err;
+
+  DevInfoResp() : err(NOERR) {}
 };
 
 struct DevVendorAttrsResp {
   std::vector<std::map<std::string, std::string>> content;
   ctlerr_t err;
+
+  DevVendorAttrsResp() : err(NOERR) {}
 };
 
 struct CantIdDevResp {
   bool content;
   ctlerr_t err;
+
+  CantIdDevResp() : err(NOERR) {}
 };
 
 class Client {

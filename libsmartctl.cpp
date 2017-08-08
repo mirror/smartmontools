@@ -57,6 +57,20 @@ const char *libsmartctl_cpp_cvsid = "$Id$" CONFIG_H_CVSID LIBSMARTCTL_H_CVSID;
 
 namespace libsmartctl {
 
+const std::string errStr(ctlerr_t err) {
+  static const std::map<ctlerr_t, std::string> errs = {
+      {NOERR, "No errors"},
+      {POWERMODEBELOWOPTION, "The power mode is below the configured option"},
+      {FAILEDDEVICEIDREAD, "Device read failure"},
+      {FAILEDSMARTCMD, "Test SMART command failed"},
+      {GETDEVICERR, "Could not retrieve device information"},
+      {DEVICEOPENERR, "Could not open device"},
+      {UNSUPPORTEDDEVICETYPE, "Device type is not supported"},
+  };
+
+  return errs.at(err);
+}
+
 class Client::Impl {
 
 public:
@@ -104,7 +118,7 @@ private:
 
 public:
   CantIdDevResp cantIdDev(std::string const &devname, std::string const &type) {
-    CantIdDevResp resp = {};
+    CantIdDevResp resp;
 
     smart_device_auto_ptr device;
     ctlerr_t err = initDevice(device, devname, type);
@@ -134,7 +148,7 @@ public:
   }
 
   DevInfoResp getDevInfo(std::string const &devname, std::string const &type) {
-    DevInfoResp resp = {};
+    DevInfoResp resp;
 
     ata_print_options ataopts;
     scsi_print_options scsiopts;
@@ -159,7 +173,7 @@ public:
 
   DevVendorAttrsResp getDevVendorAttrs(std::string const &devname,
                                        std::string const &type) {
-    DevVendorAttrsResp resp = {};
+    DevVendorAttrsResp resp;
 
     ata_print_options ataopts;
     scsi_print_options scsiopts;
