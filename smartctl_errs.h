@@ -18,7 +18,14 @@ enum ctlerr_t {
 };
 
 namespace libsmartctl {
-std::string errstr(ctlerr_t err);
-}
+/**
+ * @brief Returns std::string version of ctlerr_t
+ *
+ * @param err ctlerr_t to stringify
+ *
+ * @return std::string represntation of err code
+ */
+const std::string errStr(ctlerr_t err);
+} // namespace libsmartctl
 
 #endif
