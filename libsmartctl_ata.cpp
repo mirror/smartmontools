@@ -240,24 +240,24 @@ get_smart_attr_w_thres(std::vector<std::map<std::string, std::string>> &results,
       continue;
 
     if (state > ATTRSTATE_NO_NORMVAL)
-      a_row["value"] = (!hexval ? strprintf("%.3d", attr.current)
+      a_row["value"] = (!hexval ? strprintf("%d", attr.current)
                                 : strprintf("0x%02x", attr.current));
     else
       a_row["value"] = (!hexval ? "---" : "----");
     if (!(defs[attr.id].flags & ATTRFLAG_NO_WORSTVAL))
-      a_row["worst"] = (!hexval ? strprintf("%.3d", attr.worst)
+      a_row["worst"] = (!hexval ? strprintf("%d", attr.worst)
                                 : strprintf("0x%02x", attr.worst));
     else
       a_row["worst"] = (!hexval ? "---" : "----");
     if (state > ATTRSTATE_NO_THRESHOLD)
-      a_row["threshold"] = (!hexval ? strprintf("%.3d", threshold)
+      a_row["threshold"] = (!hexval ? strprintf("%d", threshold)
                                     : strprintf("0x%02x", threshold));
     else
       a_row["threshold"] = (!hexval ? "---" : "----");
 
     // Print line for each valid attribute
     a_row["id"] =
-        (!hexid ? strprintf("%3d", attr.id) : strprintf("0x%02x", attr.id));
+        (!hexid ? strprintf("%d", attr.id) : strprintf("0x%02x", attr.id));
     a_row["attr_name"] = ata_get_smart_attr_name(attr.id, defs, rpm);
     a_row["raw_value"] = ata_format_attr_raw_value(attr, defs);
     a_row["flag"] = strprintf("0x%04x", attr.flags);
