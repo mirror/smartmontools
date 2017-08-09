@@ -66,6 +66,7 @@ const std::string errStr(ctlerr_t err) {
       {GETDEVICERR, "Could not retrieve device information"},
       {DEVICEOPENERR, "Could not open device"},
       {UNSUPPORTEDDEVICETYPE, "Device type is not supported"},
+      {CLIENTINITIALIZTIONFAILURE, "libsmartctl client initialization failure"},
   };
 
   return errs.at(err);
@@ -86,13 +87,17 @@ private:
     // Initialize interface and check registration
     smart_interface::init();
     if (!smi()) {
-      throw std::runtime_error("could not register smart-interface");
+      up_ = false;
+      return;
     }
 
     // database init has to occur after smart_interface::init();
     if (!init_drive_database(false)) {
-      throw std::runtime_error("could not init drive db");
+      up_ = false;
+      return;
     }
+
+    up_ = true;
   }
 
   ctlerr_t initDevice(smart_device_auto_ptr &device, std::string const &devname,
@@ -119,6 +124,10 @@ private:
 public:
   CantIdDevResp cantIdDev(std::string const &devname, std::string const &type) {
     CantIdDevResp resp;
+    if (!up_) {
+      resp.err = CLIENTINITIALIZTIONFAILURE;
+      return resp;
+    }
 
     smart_device_auto_ptr device;
     ctlerr_t err = initDevice(device, devname, type);
@@ -149,6 +158,10 @@ public:
 
   DevInfoResp getDevInfo(std::string const &devname, std::string const &type) {
     DevInfoResp resp;
+    if (!up_) {
+      resp.err = CLIENTINITIALIZTIONFAILURE;
+      return resp;
+    }
 
     ata_print_options ataopts;
     scsi_print_options scsiopts;
@@ -174,6 +187,10 @@ public:
   DevVendorAttrsResp getDevVendorAttrs(std::string const &devname,
                                        std::string const &type) {
     DevVendorAttrsResp resp;
+    if (!up_) {
+      resp.err = CLIENTINITIALIZTIONFAILURE;
+      return resp;
+    }
 
     ata_print_options ataopts;
     scsi_print_options scsiopts;
@@ -196,6 +213,9 @@ public:
 
     return resp;
   }
+
+private:
+  bool up_;
 };
 
 Client::Client() : impl_(Impl::getClient()) {}
