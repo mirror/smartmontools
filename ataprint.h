@@ -27,6 +27,7 @@
 
 #define ATAPRINT_H_CVSID "$Id$\n"
 
+#include <map>
 #include <vector>
 
 #include "dev_interface.h"
