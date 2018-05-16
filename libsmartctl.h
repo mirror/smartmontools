@@ -80,7 +80,8 @@ public:
    * @return struct containing an err type and a boolean indicating if the the
    * device can't be IDed, meaning if it can't -> return true.
    */
-  CantIdDevResp cantIdDev(std::string const &devname, std::string const &type);
+  virtual CantIdDevResp cantIdDev(std::string const &devname,
+                                  std::string const &type);
 
   /**
    *@brief Retrieves drive information.
@@ -92,8 +93,8 @@ public:
    *
    * @return Map of information type and value, both strings.
    */
-  DevInfoResp getDevInfo(std::string const &devname,
-                         std::string const &type = "");
+  virtual DevInfoResp getDevInfo(std::string const &devname,
+                                 std::string const &type = "");
 
   /**
    *@brief Retrieves drive vendor attributes
@@ -106,11 +107,12 @@ public:
    * @return a vector maps containing string key and values of vendor attribute
    *type name and attribute type values
    */
-  DevVendorAttrsResp getDevVendorAttrs(std::string const &devname,
-                                       std::string const &type = "");
+  virtual DevVendorAttrsResp getDevVendorAttrs(std::string const &devname,
+                                               std::string const &type = "");
 
 public:
   Client();
+  virtual ~Client() {}
 
 private:
   class Impl;
