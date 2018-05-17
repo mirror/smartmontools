@@ -65,7 +65,7 @@ struct CantIdDevResp {
   CantIdDevResp() : err(NOERR) {}
 };
 
-class Client {
+class ClientInterface {
 public:
   /**
    * @brief Checks if device name of the param type can be identified.
@@ -81,7 +81,7 @@ public:
    * device can't be IDed, meaning if it can't -> return true.
    */
   virtual CantIdDevResp cantIdDev(std::string const &devname,
-                                  std::string const &type);
+                                  std::string const &type) = 0;
 
   /**
    *@brief Retrieves drive information.
@@ -94,7 +94,7 @@ public:
    * @return Map of information type and value, both strings.
    */
   virtual DevInfoResp getDevInfo(std::string const &devname,
-                                 std::string const &type = "");
+                                 std::string const &type = "") = 0;
 
   /**
    *@brief Retrieves drive vendor attributes
@@ -107,8 +107,59 @@ public:
    * @return a vector maps containing string key and values of vendor attribute
    *type name and attribute type values
    */
-  virtual DevVendorAttrsResp getDevVendorAttrs(std::string const &devname,
-                                               std::string const &type = "");
+  virtual DevVendorAttrsResp
+  getDevVendorAttrs(std::string const &devname,
+                    std::string const &type = "") = 0;
+
+public:
+  virtual ~ClientInterface() {}
+};
+
+class Client : public ClientInterface {
+public:
+  /**
+   * @brief Checks if device name of the param type can be identified.
+   * Gaurantees if true, the device is not identifiable, but if true, it still
+   * necessarily mean device is identifiable.
+   *
+   * @param String of full path device name.
+   *
+   * @param String of device type, if left blank, auto device type detection
+   * will be used.
+   *
+   * @return struct containing an err type and a boolean indicating if the the
+   * device can't be IDed, meaning if it can't -> return true.
+   */
+  virtual CantIdDevResp cantIdDev(std::string const &devname,
+                                  std::string const &type) override;
+
+  /**
+   *@brief Retrieves drive information.
+   *
+   * @param String of full path device name.
+   *
+   * @param String of device type, if left blank, auto device type detection
+   * will be used.
+   *
+   * @return Map of information type and value, both strings.
+   */
+  virtual DevInfoResp getDevInfo(std::string const &devname,
+                                 std::string const &type = "") override;
+
+  /**
+   *@brief Retrieves drive vendor attributes
+   *
+   * @param string of full path device name
+   *
+   * @param String of device type, if left blank, auto device type detection
+   * will be used.
+   *
+   * @return a vector maps containing string key and values of vendor attribute
+   *type name and attribute type values
+   */
+  virtual DevVendorAttrsResp
+  getDevVendorAttrs(std::string const &devname,
+                    std::string const &type = "") override;
 
 public:
   Client();
