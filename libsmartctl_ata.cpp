@@ -65,7 +65,7 @@ static void get_drive_info(std::map<std::string, std::string> &results,
     uint64_t unique_id = 0;
     int naa = ata_get_wwn(drive, oui, unique_id);
     if (naa >= 0) {
-      results["LU_WWN_device_id"] =
+      results["lu_wwn_device_id"] =
           strprintf("%x %06x %09" PRIx64, naa, oui, unique_id);
     }
   }
