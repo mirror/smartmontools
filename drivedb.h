@@ -773,7 +773,7 @@ const drive_settings builtin_knowndrives[] = {
       // Patriot Flare/SBFM91.2
     "Patriot Burst( (120|240|480|960)GB)?|" // tested with Patriot Burst/SBFM11.2,
       // Patriot Burst 480GB/SBFMLA.5
-    "PNY CS(900|1311|2211) (120|240|480|960)GB SSD|" // tested with PNY CS900 120GB SSD/CS900612,
+    "PNY CS(900|1311|2211) (120G|240G|480G|960G|1T|2T)B SSD|" // tested with PNY CS900 120GB SSD/CS900612 and PNY CS900 1TB
       // PNY CS900 240GB SSD/CS900613, PNY CS1311 120GB SSD/CS131122, PNY CS2211 240GB SSD/CS221016
     "PNY ELITE PSSD|" // tested with PNY ELITE PSSD/CS105P13 (240G)
     "SSD Smartbuy (60|64|120|128|240|256|480|512|960|1024|2000)GB|" // PS3111-S11, tested with
